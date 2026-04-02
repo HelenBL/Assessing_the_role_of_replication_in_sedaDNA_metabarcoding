@@ -839,11 +839,20 @@ df_meta <- df_meta %>%
     FacetCol = paste0(Marker, " – ", Year)
   )
 
+df_meta <- df_meta %>%
+  group_by(Site, Core_Rep, Depth, Marker, Year) %>%  # define la muestra
+  mutate(
+    RelAbund_norm = RelAbund / sum(RelAbund, na.rm = TRUE)
+  ) %>%
+  ungroup()
 
+df_meta %>%
+  group_by(Site, Core_Rep, Depth, Marker, Year) %>%
+  summarise(total = sum(RelAbund_norm))
 
 phylum_order <- df_meta %>%
   group_by(Phylum) %>%
-  summarise(Total = sum(RelAbund, na.rm = TRUE)) %>%
+  summarise(Total = sum(RelAbund_norm, na.rm = TRUE)) %>%
   arrange(desc(Total)) %>%
   pull(Phylum)
 
@@ -858,7 +867,7 @@ pal_phylum <- scales::hue_pal()(n_phy)
 
 p_metazoa <- ggplot(
   df_meta,
-  aes(x = Core_Rep, y = RelAbund, fill = Phylum)
+  aes(x = Core_Rep, y = RelAbund_norm, fill = Phylum)
 ) +
   geom_col(width = 0.85) +
   facet_grid(
@@ -890,7 +899,7 @@ p_metazoa
 
 df_all_clean_meta <- df_meta %>% 
   group_by(Site, FacetCol, Core_Rep) %>% 
-  filter(sum(RelAbund, na.rm = TRUE) > 0) %>% 
+  filter(sum(RelAbund_norm, na.rm = TRUE) > 0) %>% 
   ungroup()
 
 
@@ -969,7 +978,7 @@ colors_depth_site2[grepl("1974", names(colors_depth_site2))]
 plot_site <- function(site_id, add_x_label = FALSE, add_y_label = FALSE) {
   df_all_clean_meta2 %>% 
     filter(Site == site_id) %>% 
-    ggplot(aes(x = Core_Rep, y = RelAbund, fill = Phylum)) +
+    ggplot(aes(x = Core_Rep, y = RelAbund_norm, fill = Phylum)) +
     geom_col(width = 0.85) +
     facet_grid2(
       rows   = vars(Site),
@@ -1077,7 +1086,7 @@ plot_site <- function(site_id, add_x_label = FALSE, add_y_label = FALSE) {
     stop("Hay algún FacetCol_clean sin color asignado (NA).")
   }
   
-  ggplot(df_site, aes(x = Core_Rep, y = RelAbund, fill = Phylum)) +
+  ggplot(df_site, aes(x = Core_Rep, y = RelAbund_norm, fill = Phylum)) +
     geom_col(width = 0.85) +
     facet_grid2(
       rows   = vars(Site),
@@ -1173,7 +1182,7 @@ plot_marker <- function(marker_id, show_y = TRUE) {
   
   df_all_clean_meta2 %>%
     filter(Marker == marker_id) %>%
-    ggplot(aes(x = Core_Rep, y = RelAbund, fill = Phylum)) +
+    ggplot(aes(x = Core_Rep, y = RelAbund_norm, fill = Phylum)) +
     
     geom_col(width = 0.85) +
     
@@ -1256,7 +1265,7 @@ plot_site_marker <- function(site_id, marker_id,
     stop("Hay algún Year sin color asignado (NA).")
   }
   
-  ggplot(df_site, aes(x = Core_Rep, y = RelAbund, fill = Phylum)) +
+  ggplot(df_site, aes(x = Core_Rep, y = RelAbund_norm, fill = Phylum)) +
     geom_col(width = 0.85) +
     facet_grid2(
       rows   = vars(Site),
@@ -1322,7 +1331,11 @@ col_18s <- wrap_elements(
 )
 
 p_leg <- plot_site_marker("STO", "COI") +
-  theme(legend.position = "right")  # aquí SÍ la queremos
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 14),   
+    legend.title = element_text(size = 16)   
+  )  
 
 leg <- cowplot::get_legend(p_leg)
 

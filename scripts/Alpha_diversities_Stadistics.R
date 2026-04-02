@@ -9,6 +9,7 @@ library(tidyr)
 library(data.table)
 library(performance)
 library(emmeans)
+library(lmerTest)
 
 
 ### COI
@@ -48,7 +49,7 @@ reps_18 <- read.xlsx("Clean_Data_18S_Reps_AbRel.xlsx")
 colnames(reps_18)[colnames(reps_18) == "X1"] <- "ASV"
 
 rownames(reps_18) <- reps_18$ASV
-reps_18_all <- reps_18[,c(2:142)]
+reps_18_all <- reps_18[,c(2:141)]
 
 reps_18_all_t <- as.data.frame(t(reps_18_all))
 reps_18_all_t$Sample <- rownames(reps_18_all_t)
@@ -99,28 +100,105 @@ alpha_all_18s <- alpha_all%>%
 alpha_all_coi <- alpha_all%>%
   filter(Marker=="COI")
 
+
+ggplot(alpha_all_18s, aes(x = Core_Rep, y = Shannon)) +
+  geom_boxplot() +
+  geom_point(aes(color = TechRep), position = position_jitter(width = 0.2)) +
+  facet_grid(~Site + AgeGroup) +
+  theme_bw()
+
+tech_var_18s <- alpha_all_18s %>%
+  group_by(Site, AgeGroup, Core_Rep) %>%
+  summarise(
+    sd_shannon = sd(Shannon),
+    mean_shannon = mean(Shannon),
+    cv = sd_shannon / mean_shannon
+  )
+tech_var_18s
+
+ggplot(alpha_all_18s, aes(x = TechRep, y = Shannon, group = Core_Rep)) +
+  geom_line(alpha = 0.4) +
+  geom_point() +
+  facet_grid(~Core_Rep) +
+  theme_bw()
+
+
+
+ggplot(alpha_all_18s, aes(x = Core_Rep, y = Richness)) +
+  geom_boxplot() +
+  geom_point(aes(color = TechRep), position = position_jitter(width = 0.2)) +
+  facet_grid(~Site + AgeGroup) +
+  theme_bw()
+
+tech_var_18s <- alpha_all_18s %>%
+  group_by(Site, AgeGroup, Core_Rep) %>%
+  summarise(
+    sd_rich = sd(Richness),
+    mean_rich = mean(Richness),
+    cv = sd_rich / mean_rich
+  )
+tech_var_18s
+
+ggplot(alpha_all_18s, aes(x = TechRep, y = Richness, group = Core_Rep)) +
+  geom_line(alpha = 0.4) +
+  geom_point() +
+  facet_grid(~Core_Rep) +
+  theme_bw()
+
+
+
+ggplot(alpha_all_coi, aes(x = Core_Rep, y = Shannon)) +
+  geom_boxplot() +
+  geom_point(aes(color = TechRep), position = position_jitter(width = 0.2)) +
+  facet_grid(~Site + AgeGroup) +
+  theme_bw()
+
+tech_var_coi <- alpha_all_coi %>%
+  group_by(Site, AgeGroup, Core_Rep) %>%
+  summarise(
+    sd_shannon = sd(Shannon),
+    mean_shannon = mean(Shannon),
+    cv = sd_shannon / mean_shannon
+  )
+tech_var_coi
+
+ggplot(alpha_all_coi, aes(x = TechRep, y = Shannon, group = Core_Rep)) +
+  geom_line(alpha = 0.4) +
+  geom_point() +
+  facet_grid(~Core_Rep) +
+  theme_bw()
+
+
+
+ggplot(alpha_all_coi, aes(x = Core_Rep, y = Richness)) +
+  geom_boxplot() +
+  geom_point(aes(color = TechRep), position = position_jitter(width = 0.2)) +
+  facet_grid(~Site + AgeGroup) +
+  theme_bw()
+
+tech_var_coi <- alpha_all_coi %>%
+  group_by(Site, AgeGroup, Core_Rep) %>%
+  summarise(
+    sd_rich = sd(Richness),
+    mean_rich = mean(Richness),
+    cv = sd_rich / mean_rich
+  )
+tech_var_coi
+
+ggplot(alpha_all_coi, aes(x = TechRep, y = Richness, group = Core_Rep)) +
+  geom_line(alpha = 0.4) +
+  geom_point() +
+  facet_grid(~Core_Rep) +
+  theme_bw()
+
+
+
 ## 18S
-
-
 m_rich <- glmer.nb(
-  Richness ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_all_18s
-)
-
-m_null <- glmer.nb(
   Richness ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_all_18s
 )
-
-anova(m_null, m_rich)
-
-
-summary(m_rich)
-VarCorr(m_rich)
-vc <- as.data.frame(VarCorr(m_rich))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_rich))
 
@@ -132,26 +210,14 @@ vc
 icc(m_rich)
 
 
-m_shannon <- lmer(
-  Shannon ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_all_18s,
-  REML = FALSE
-)
 
-m_null_s <- lmer(
+
+m_shannon <- lmer(
   Shannon ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_all_18s,
-  REML = FALSE
+  REML = TRUE
 )
-
-anova(m_null_s, m_shannon)
-
-summary(m_shannon)
-VarCorr(m_shannon)
-vc <- as.data.frame(VarCorr(m_shannon))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_shannon))
 
@@ -161,30 +227,19 @@ vc$prop <- vc$vcov / total_var
 
 vc
 icc(m_shannon)
+rand(m_shannon)
+
+
+
 
 
 ##COI
 
-
 m_rich <- glmer.nb(
-  Richness ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_all_coi
-)
-
-m_null <- glmer.nb(
   Richness ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_all_coi
 )
-
-anova(m_null, m_rich)
-
-
-summary(m_rich)
-VarCorr(m_rich)
-vc <- as.data.frame(VarCorr(m_rich))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_rich))
 
@@ -196,26 +251,13 @@ vc
 icc(m_rich)
 
 
-m_shannon <- lmer(
-  Shannon ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_all_coi,
-  REML = FALSE
-)
 
-m_null_s <- lmer(
+m_shannon <- lmer(
   Shannon ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_all_coi,
-  REML = FALSE
+  REML = TRUE
 )
-
-anova(m_null_s, m_shannon)
-
-summary(m_shannon)
-VarCorr(m_shannon)
-vc <- as.data.frame(VarCorr(m_shannon))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_shannon))
 
@@ -225,6 +267,8 @@ vc$prop <- vc$vcov / total_var
 
 vc
 icc(m_shannon)
+rand(m_shannon)
+
 
 
 
@@ -270,7 +314,7 @@ metazoa_reps_18 <- reps_18 %>%
 
 
 rownames(metazoa_reps_18) <- metazoa_reps_18$ASV
-metazoa_reps_18 <- metazoa_reps_18[,c(2:142)]
+metazoa_reps_18 <- metazoa_reps_18[,c(2:141)]
 
 
 metazoa_reps_18_t <- as.data.frame(t(metazoa_reps_18))
@@ -309,33 +353,18 @@ alpha_all_metazoa$Depth   <- factor(alpha_all_metazoa$Depth)
 
 ### Rep Techs
 
-alpha_rep_all_metazoa_18s <- alpha_rep_all_metazoa%>%
+alpha_rep_all_metazoa_18s <- alpha_all_metazoa%>%
   filter(Marker=="18S")
 
-alpha_rep_all_metazoa_coi <- alpha_rep_all_metazoa%>%
+alpha_rep_all_metazoa_coi <- alpha_all_metazoa%>%
   filter(Marker=="COI")
 
 ## 18S
-
 m_rich <- glmer.nb(
-  Richness ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_rep_all_metazoa_18s
-)
-
-m_null <- glmer.nb(
   Richness ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_rep_all_metazoa_18s
 )
-
-anova(m_null, m_rich)
-
-
-summary(m_rich)
-VarCorr(m_rich)
-vc <- as.data.frame(VarCorr(m_rich))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_rich))
 
@@ -347,26 +376,14 @@ vc
 icc(m_rich)
 
 
-m_shannon <- lmer(
-  Shannon ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_rep_all_metazoa_18s,
-  REML = FALSE
-)
 
-m_null_s <- lmer(
+
+m_shannon <- lmer(
   Shannon ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_rep_all_metazoa_18s,
-  REML = FALSE
+  REML = TRUE
 )
-
-anova(m_null_s, m_shannon)
-
-summary(m_shannon)
-VarCorr(m_shannon)
-vc <- as.data.frame(VarCorr(m_shannon))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_shannon))
 
@@ -376,30 +393,19 @@ vc$prop <- vc$vcov / total_var
 
 vc
 icc(m_shannon)
+rand(m_shannon)
+
+
+
 
 
 ##COI
 
-
 m_rich <- glmer.nb(
-  Richness ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_rep_all_metazoa_coi
-)
-
-m_null <- glmer.nb(
   Richness ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_rep_all_metazoa_coi
 )
-
-anova(m_null, m_rich)
-
-
-summary(m_rich)
-VarCorr(m_rich)
-vc <- as.data.frame(VarCorr(m_rich))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_rich))
 
@@ -411,26 +417,13 @@ vc
 icc(m_rich)
 
 
-m_shannon <- lmer(
-  Shannon ~ Site + AgeGroup + TechRep +
-    (1 | Site:Core_Rep:AgeGroup),
-  data = alpha_rep_all_metazoa_coi,
-  REML = FALSE
-)
 
-m_null_s <- lmer(
+m_shannon <- lmer(
   Shannon ~ Site + AgeGroup +
     (1 | Site:Core_Rep:AgeGroup),
   data = alpha_rep_all_metazoa_coi,
-  REML = FALSE
+  REML = TRUE
 )
-
-anova(m_null_s, m_shannon)
-
-summary(m_shannon)
-VarCorr(m_shannon)
-vc <- as.data.frame(VarCorr(m_shannon))
-vc[, c("grp","vcov","sdcor")]
 
 vc <- as.data.frame(VarCorr(m_shannon))
 
@@ -440,6 +433,9 @@ vc$prop <- vc$vcov / total_var
 
 vc
 icc(m_shannon)
+rand(m_shannon)
+
+
 
 
 
