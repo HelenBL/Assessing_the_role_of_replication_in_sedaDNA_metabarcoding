@@ -71,10 +71,3 @@ If you use this repository, please cite:
 
 > 
 
----
-
-## 📬 Contact
-
-For questions or collaboration:
-
-elena.bl@ceab.csic.es
