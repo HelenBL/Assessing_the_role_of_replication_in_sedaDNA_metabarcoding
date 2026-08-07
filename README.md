@@ -1,4 +1,4 @@
-# Assessing the role of replication in sedimentary DNA metabarcoding
+# Assessing the role of replication in metabarcoding-based sedaDNA
 ---
 This repository contains the data and R scripts used to analyse the contribution of biological and technical replication in sedimentary ancient DNA (sedaDNA) metabarcoding datasets. The study compares mitochondrial (COI) and nuclear (18S) markers across intertidal sediment cores, integrating diversity analyses, community ordination, PERMANOVA, and joint species distribution model (jSDM). All scripts required to reproduce the figures, statistical analyses, and supplementary datasets are provided.
 
